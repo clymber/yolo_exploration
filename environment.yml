@@ -1,0 +1,52 @@
+name: yolo-dev
+
+channels:
+  - conda-forge
+
+variables:
+  # Let PyTorch run unsupported MPS ops, such as torchvision NMS, on CPU.
+  PYTORCH_ENABLE_MPS_FALLBACK: "1"
+
+dependencies:
+  # Core Python
+  - python=3.11
+  - pip
+
+  # Jupyter / notebook workflow
+  - jupyterlab
+  - notebook
+  - ipykernel
+  - jupytext
+  - ipywidgets
+
+  # Scientific / data tools
+  - numpy
+  - pandas
+  - matplotlib
+  - scipy
+  - scikit-learn
+  - pillow
+  - pyyaml
+  - tqdm
+
+  # Developer tools
+  - black
+  - ruff
+  - pytest
+
+  # Useful for image/video handling
+  - ffmpeg
+  - opencv
+  - psutil
+  - requests
+  - polars
+
+  # Keep PyTorch in Conda so it shares the Conda OpenMP runtime.
+  - pytorch=2.10
+  - torchvision=0.25
+  - torchaudio=2.10
+
+  # Install pip-only YOLO packages after Conda has installed PyTorch.
+  - pip:
+      - ultralytics
+      - ultralytics-thop
