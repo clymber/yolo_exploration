@@ -20,6 +20,7 @@ models/pretrained/*.tflite
 data/raw/
 data/external/
 data/processed/
+datasets/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

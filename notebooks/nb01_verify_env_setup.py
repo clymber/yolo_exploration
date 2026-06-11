@@ -23,14 +23,13 @@ Verify the YOLO development environment setup.
 import os
 import sys
 import platform
-from urllib.request import urlretrieve
 
 import torch
 import torchvision
 import torchaudio
 import ultralytics
 
-from yolo_exploration import PROJECT_ROOT, relative_to_project_root
+from yolo_exploration import PROJECT_ROOT, cache_download, relative_to_project_root
 
 WEIGHTS_DIR = PROJECT_ROOT / "models" / "pretrained"
 WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -98,9 +97,7 @@ else:
 # ## 3. Minimal Python test
 
 # %%
-if not BUS_IMAGE.exists():
-    source = "https://ultralytics.com/images/bus.jpg"
-    urlretrieve(source, BUS_IMAGE)
+BUS_IMAGE = cache_download(BUS_IMAGE, "https://ultralytics.com/images/bus.jpg")
 
 print("Bus image:", BUS_IMAGE)
 print("Bus image exists:", BUS_IMAGE.exists())
@@ -147,4 +144,3 @@ if result.boxes is not None:
     print("Confidences:", result.boxes.conf.tolist())
 else:
     print("No boxes detected.")
-
