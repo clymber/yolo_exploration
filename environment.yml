@@ -41,6 +41,13 @@ dependencies:
   - requests
   - polars
 
+  # COCO dataet handling
+  - pycocotools
+
+  # Roboflow / notebook helper packages
+  - supervision
+  - python-dotenv
+
   # Keep PyTorch in Conda so it shares the Conda OpenMP runtime.
   - pytorch=2.10
   - torchvision=0.25
