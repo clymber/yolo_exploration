@@ -1,5 +1,6 @@
 # Ignore Jupyter notebooks, keep Jupytext notebooks instead.
 *.ipynb
+.notebook-stamps/
 
 # File systems specific and temporary files
 .DS_Store
