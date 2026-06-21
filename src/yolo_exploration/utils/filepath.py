@@ -1,11 +1,26 @@
 """
-Utilities related to filesystems.
+Utilities related to file paths.
 """
 
 from __future__ import annotations
 
 import re
 from pathlib import Path
+
+
+def relative_to_userhome(path: Path | str) -> str:
+    """
+    Return a stable POSIX-style path relative to the user's home directory.
+
+    The home directory will be replaced with a tilde (~) if applicable.
+    """
+    candidate = Path(path)
+    if not candidate.is_absolute():
+        candidate = Path.cwd() / candidate
+
+    userhome = str(Path.home())
+    resolved = candidate.resolve().as_posix()
+    return resolved.replace(userhome, "~", 1)
 
 
 def _natural_name_key(path: Path) -> list[str | int]:
@@ -90,3 +105,10 @@ def directory_tree(
     add_children(root, "", 0)
     return "\n".join(lines)
 
+def ensure_dir(path: Path | str) -> Path:
+    """
+    Ensure that a directory exists, creating it if necessary.
+    """
+    dir_path = Path(path)
+    dir_path.mkdir(parents=True, exist_ok=True)
+    return dir_path

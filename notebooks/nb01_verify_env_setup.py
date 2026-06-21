@@ -12,33 +12,53 @@
 #     name: yolo-dev
 # ---
 
-# %% [markdown]
-# # YOLO development environment setup verification
-
 # %%
 """
 Verify the YOLO development environment setup.
 """
 
+# Reloads all modules every time before executing code, except explicitly excluded using
+# # %aimport -<package>, like %aimport -numpy.
+# %load_ext autoreload
+# %autoreload 2
+
+# %aimport -os
+# %aimport -sys
+# %aimport -platform
+# %aimport -torch
+# %aimport -torchvision
+# %aimport -torchaudio
+# %aimport -ultralytics
+
+
+# %%
+from yolo_exploration import configure_stdio_relative_path, PROJECT_ROOT
+
+# Display project paths relatively for consistent output across environments.
+configure_stdio_relative_path(PROJECT_ROOT)
+
+# %%
 import os
-import sys
 import platform
+import sys
 
 import torch
-import torchvision
 import torchaudio
+import torchvision
 import ultralytics
 
-from yolo_exploration import PROJECT_ROOT, cache_download, relative_to_project_root
+from yolo_exploration import (
+    cache_download,
+    ensure_dir,
+)
 
-WEIGHTS_DIR = PROJECT_ROOT / "models" / "pretrained"
-WEIGHTS_DIR.mkdir(parents=True, exist_ok=True)
+# %% [markdown]
+# # YOLO development environment setup verification
 
-DATA_EXTERNAL = PROJECT_ROOT / "data" / "external"
-DATA_EXTERNAL.mkdir(parents=True, exist_ok=True)
-
-PREDICTIONS_DIR = PROJECT_ROOT / "outputs" / "predictions"
-PREDICTIONS_DIR.mkdir(parents=True, exist_ok=True)
+# %%
+WEIGHTS_DIR = ensure_dir(PROJECT_ROOT / "models" / "pretrained")
+DATA_EXTERNAL = ensure_dir(PROJECT_ROOT / "data" / "external")
+PREDICTIONS_DIR = ensure_dir(PROJECT_ROOT / "outputs" / "predictions")
 
 MODEL_PATH = WEIGHTS_DIR / "yolo11n.pt"
 BUS_IMAGE = DATA_EXTERNAL / "bus.jpg"
@@ -50,10 +70,10 @@ print("PyTorch:", torch.__version__)
 print("torchvision:", torchvision.__version__)
 print("torchaudio:", torchaudio.__version__)
 print("Ultralytics:", ultralytics.__version__)
-print("Project root:", relative_to_project_root(PROJECT_ROOT))
-print("Weights directory:", relative_to_project_root(WEIGHTS_DIR))
-print("External data directory:", relative_to_project_root(DATA_EXTERNAL))
-print("Predictions directory:", relative_to_project_root(PREDICTIONS_DIR))
+print("Project root:", PROJECT_ROOT)
+print("Weights directory:", WEIGHTS_DIR)
+print("External data directory:", DATA_EXTERNAL)
+print("Predictions directory:", PREDICTIONS_DIR)
 
 
 # %% [markdown]
@@ -135,7 +155,7 @@ print("Number of result objects:", len(results))
 # %%
 result = results[0]
 
-print("Input image:", relative_to_project_root(result.path))
+print("Input image:", result.path)
 print("Original image shape:", result.orig_shape)
 
 if result.boxes is not None:

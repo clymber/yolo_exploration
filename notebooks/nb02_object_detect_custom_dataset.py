@@ -27,6 +27,24 @@
 Train yolo11 model(s) for object detection on custom dataset(s) from COCO.
 """
 
+# Reloads all modules every time before executing code, except explicitly excluded using
+# # %aimport -<package>, like %aimport -numpy.
+# %load_ext autoreload
+# %autoreload 2
+# %aimport -csv
+# %aimport -textwrap
+# %aimport -functools
+# %aimport -IPython
+# %aimport -ultralytics
+
+from yolo_exploration import configure_stdio_relative_path, PROJECT_ROOT
+
+# Display project paths relatively for consistent output across environments.
+# Must be called before other imports to setup filters.
+configure_stdio_relative_path(PROJECT_ROOT)
+
+
+# %%
 import csv
 import textwrap
 from functools import partial
@@ -35,34 +53,33 @@ from IPython.display import Image as IPyImage
 from IPython.display import display
 
 from yolo_exploration import (
-    DEVICE,
-    PROJECT_ROOT,
     cache_download,
     configure_ultralytics_privacy,
     directory_tree,
-    relative_to_project_root,
+    ensure_dir,
+    get_device,
+    relative_to_userhome,
 )
 
-configure_ultralytics_privacy()  # must be called before importing ultralytics
+# Must be called before importing ultralytics
+configure_ultralytics_privacy()  
 from ultralytics import YOLO  # noqa: E402
 
 # %%
-DATA_DIR = PROJECT_ROOT / "data"
-MODELS_DIR = PROJECT_ROOT / "models"
-PRETRAINED_DIR = MODELS_DIR / "pretrained"
-OUTPUTS_DIR = PROJECT_ROOT / "outputs"
-RUNS_DIR = OUTPUTS_DIR / "runs"
-DATA_EXTERNAL = DATA_DIR / "external"
-PREDICTIONS_DIR = OUTPUTS_DIR / "predictions"
-
-for directory in (PRETRAINED_DIR, RUNS_DIR, DATA_EXTERNAL, PREDICTIONS_DIR):
-    directory.mkdir(parents=True, exist_ok=True)
+DATA_DIR = ensure_dir(PROJECT_ROOT / "data")
+MODELS_DIR = ensure_dir(PROJECT_ROOT / "models")
+PRETRAINED_DIR = ensure_dir(MODELS_DIR / "pretrained")
+OUTPUTS_DIR = ensure_dir(PROJECT_ROOT / "outputs")
+RUNS_DIR = ensure_dir(OUTPUTS_DIR / "runs")
+DATA_EXTERNAL = ensure_dir(DATA_DIR / "external")
+PREDICTIONS_DIR = ensure_dir(OUTPUTS_DIR / "predictions")
 
 YOLO11N_MODEL = PRETRAINED_DIR / "yolo11n.pt"
+DEVICE = get_device()
 
-print("PROJECT_ROOT:", PROJECT_ROOT)
-print("RUNS_DIR:", relative_to_project_root(RUNS_DIR))
-print("YOLO11N_MODEL:", relative_to_project_root(YOLO11N_MODEL))
+print("PROJECT_ROOT:", relative_to_userhome(PROJECT_ROOT))
+print("RUNS_DIR:", RUNS_DIR)
+print("YOLO11N_MODEL:", YOLO11N_MODEL)
 
 # %% [markdown]
 # ## Inference with a pretrained model
@@ -78,7 +95,7 @@ DOG_IMAGE = cache_download(
     "https://media.roboflow.com/notebooks/examples/dog.jpeg"
 )
 
-print("Dog image:", relative_to_project_root(DOG_IMAGE))
+print("Dog image:", DOG_IMAGE)
 display(IPyImage(filename=str(DOG_IMAGE), width=400))
 
 # %% [markdown]
@@ -96,8 +113,7 @@ pred_results = model.predict(
     show=False,
 )
 
-print("Prediction completed.")
-print("Number of result objects:", len(pred_results))
+print("Prediction completed. Number of result objects:", len(pred_results))
 
 # %% [markdown]
 # ### Inspect YOLO prediction output
@@ -109,13 +125,13 @@ print("Number of result objects:", len(pred_results))
 # %%
 results = pred_results[0]
 
-print("Image path:", relative_to_project_root(results.path))
+print("Image path:", results.path)
 print("Original image shape:", results.orig_shape)
 
 # Display the predicted image with bounding boxes overlaid.
 pred_image_path = str(PREDICTIONS_DIR / "nb02_pretrained_dog_prediction.jpg")
 pred_image_path = results.save(pred_image_path)
-print("Predicted image with bounding boxes:", relative_to_project_root(pred_image_path))
+print("Predicted image with bounding boxes:", pred_image_path)
 display(IPyImage(filename=str(pred_image_path), width=400))
 
 # %%
@@ -305,7 +321,7 @@ numeric_rows = [
 first_epoch = numeric_rows[0]
 last_epoch = numeric_rows[-1]
 
-print(f"Metrics file: {relative_to_project_root(metrics_path)}")
+print(f"Metrics file: {metrics_path}")
 print(f"Epochs recorded: {len(numeric_rows)}")
 print(f"Final epoch: {last_epoch['epoch']:.0f}")
 print(f"best.pt exists: {(weights_dir / 'best.pt').exists()}")
@@ -369,7 +385,7 @@ important_artifacts = [
 
 for title, filename, width in important_artifacts:
     artifact_path = output_dir / filename
-    print(f"{title}: {relative_to_project_root(artifact_path)}")
+    print(f"{title}: {artifact_path}")
     display(IPyImage(filename=str(artifact_path), width=width))
 
 # %% [markdown]
