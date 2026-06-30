@@ -1,7 +1,6 @@
 ## Jupytext/Jupyter notebook workflow for this project.
 
-CONDA_ENV ?= yolo-dev
-RUN ?= conda run -n $(CONDA_ENV)
+SHELL := /bin/bash
 
 NOTEBOOK_DIR := notebooks
 NOTEBOOK_STAMP_DIR := .notebook-stamps
@@ -14,7 +13,6 @@ GENERATED_NOTEBOOKS := $(addprefix $(NOTEBOOK_DIR)/,$(addsuffix .ipynb,$(PY_STEM
 NOTEBOOK_RUN_STAMPS := \
 	$(addprefix $(NOTEBOOK_STAMP_DIR)/,$(addsuffix .executed,$(PY_STEMS)))
 
-NOTEBOOK_KERNEL ?= yolo-dev
 NOTEBOOK_EXECUTE_FLAGS ?= --ExecutePreprocessor.timeout=-1
 NOTEBOOK_STREAM_FLAGS ?= --CoalesceStreamsPreprocessor.enabled=True
 
@@ -28,15 +26,15 @@ $(NOTEBOOK_STAMP_DIR):
 	mkdir -p $@
 
 $(NOTEBOOK_DIR)/%.ipynb: $(NOTEBOOK_DIR)/%.py jupytext.toml
-	$(RUN) jupytext --sync $<
+	source ./env_setup.sh && jupytext --sync $<
 
 $(NOTEBOOK_STAMP_DIR)/%.executed: $(NOTEBOOK_DIR)/%.ipynb \
   $(THIS_MAKEFILE) | $(NOTEBOOK_STAMP_DIR)
-	$(RUN) jupyter nbconvert $< \
+	source ./env_setup.sh && jupyter nbconvert $< \
 		--to notebook \
 		--execute \
 		--inplace \
-		--ExecutePreprocessor.kernel_name=$(NOTEBOOK_KERNEL) \
+		--ExecutePreprocessor.kernel_name="$${NOTEBOOK_KERNEL}" \
 		$(NOTEBOOK_EXECUTE_FLAGS) \
 		$(NOTEBOOK_STREAM_FLAGS)
 	touch $@
