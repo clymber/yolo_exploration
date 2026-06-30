@@ -4,7 +4,7 @@ Utilities for filtering text streams.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from typing import Any, TextIO, cast
 from uuid import NAMESPACE_URL, uuid5
 
@@ -73,3 +73,19 @@ def unset_text_stream_filter(stream: _FilteredTextStream | TextIO) -> TextIO:
         stream = cast(TextIO, wrapped_stream)
 
     return cast(TextIO, stream)
+
+
+def aligned_print(
+        keyvals: Mapping[str, object],
+        *,
+        stream: TextIO | None = None
+) -> None:
+    """
+    Print key/value pairs with keys left-aligned before their colons.
+    """
+    if not keyvals:
+        return
+
+    key_width = max(len(key) for key in keyvals)
+    for key, value in keyvals.items():
+        print(f"{key:<{key_width}}: {value}", file=stream)

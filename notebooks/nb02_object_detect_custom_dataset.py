@@ -37,7 +37,7 @@ Train yolo11 model(s) for object detection on custom dataset(s) from COCO.
 # %aimport -IPython
 # %aimport -ultralytics
 
-from yolo_exploration import configure_stdio_relative_path, PROJECT_ROOT
+from yolo_exploration import PROJECT_ROOT, configure_stdio_relative_path
 
 # Display project paths relatively for consistent output across environments.
 # Must be called before other imports to setup filters.
@@ -49,17 +49,15 @@ import csv
 import textwrap
 from functools import partial
 
-from IPython.display import Image as IPyImage
-from IPython.display import display
-
 from yolo_exploration import (
+    aligned_print,
     cache_download,
     configure_ultralytics_privacy,
     directory_tree,
     ensure_dir,
     get_device,
-    relative_to_userhome,
 )
+from yolo_exploration.utils.image import display
 
 # Must be called before importing ultralytics
 configure_ultralytics_privacy()  
@@ -77,9 +75,11 @@ PREDICTIONS_DIR = ensure_dir(OUTPUTS_DIR / "predictions")
 YOLO11N_MODEL = PRETRAINED_DIR / "yolo11n.pt"
 DEVICE = get_device()
 
-print("PROJECT_ROOT:", relative_to_userhome(PROJECT_ROOT))
-print("RUNS_DIR:", RUNS_DIR)
-print("YOLO11N_MODEL:", YOLO11N_MODEL)
+aligned_print({
+    "Project root": PROJECT_ROOT,
+    "Run Directory": RUNS_DIR,
+    "YOLO11N Model": YOLO11N_MODEL,
+})
 
 # %% [markdown]
 # ## Inference with a pretrained model
@@ -96,7 +96,7 @@ DOG_IMAGE = cache_download(
 )
 
 print("Dog image:", DOG_IMAGE)
-display(IPyImage(filename=str(DOG_IMAGE), width=400))
+display(DOG_IMAGE, width=400)
 
 # %% [markdown]
 # ### Inference with pretrained YOLO11
@@ -123,34 +123,37 @@ print("Prediction completed. Number of result objects:", len(pred_results))
 # results and metadata for each input image.
 
 # %%
-results = pred_results[0]
+shorten_text = partial(textwrap.shorten, width=100, placeholder="...")
 
-print("Image path:", results.path)
-print("Original image shape:", results.orig_shape)
+for result in pred_results:
+    aligned_print({
+        "Input image path": result.path,
+        "Input image shape": result.orig_shape,
+    })
 
-# Display the predicted image with bounding boxes overlaid.
-pred_image_path = str(PREDICTIONS_DIR / "nb02_pretrained_dog_prediction.jpg")
-pred_image_path = results.save(pred_image_path)
-print("Predicted image with bounding boxes:", pred_image_path)
-display(IPyImage(filename=str(pred_image_path), width=400))
+    boxes = result.boxes
+    if boxes is not None:
+        aligned_print({
+            "Number of predicted boxes": len(boxes),
+            "Class IDs": shorten_text(f"{boxes.cls}"),
+            "Confidences": shorten_text(f"{boxes.conf.tolist()}"),
+            "Bounding box coordinates": shorten_text(f"{boxes.xyxy.tolist()}"),
+        })
 
-# %%
-shorten_text = partial(textwrap.shorten, width=120, placeholder="...")
-boxes = results.boxes
-
-if boxes is not None:
-    print("Number of predicted boxes:", len(boxes))
-    print(shorten_text(f"Class IDs: {boxes.cls}"))
-    print(shorten_text(f"Confidences: {boxes.conf.tolist()}"))
-    print(shorten_text(f"Bounding box coordinates: {boxes.xyxy.tolist()}"))
-else:
-    print("No boxes predicted.")
+    annotated_img = result.plot(
+        pil=True,
+        labels=True,
+        conf=True,
+        boxes=True,
+    )
+    print("Predicted image with bounding boxes:")
+    display(annotated_img, width=400)
 
 # %% [markdown]
 # To map class IDs to names:
 
 # %%
-names = results.names
+names = pred_results[0].names
 
 if boxes is not None:
     for cls_id, conf, xyxy in zip(boxes.cls, boxes.conf, boxes.xyxy, strict=True):
@@ -320,14 +323,18 @@ numeric_rows = [
 ]
 first_epoch = numeric_rows[0]
 last_epoch = numeric_rows[-1]
+best_pt = weights_dir / "best.pt"
+last_pt = weights_dir / "last.pt"
 
-print(f"Metrics file: {metrics_path}")
-print(f"Epochs recorded: {len(numeric_rows)}")
-print(f"Final epoch: {last_epoch['epoch']:.0f}")
-print(f"best.pt exists: {(weights_dir / 'best.pt').exists()}")
-print(f"last.pt exists: {(weights_dir / 'last.pt').exists()}")
-print()
+aligned_print({
+    "Metrics file": metrics_path,
+    "Epochs recorded": len(numeric_rows),
+    "Final epoch": last_epoch["epoch"],
+    "best.pt": best_pt if best_pt.exists() else None,
+    "last.pt": last_pt if last_pt.exists() else None,
+})
 
+# %%
 loss_columns = [
     "train/box_loss",
     "train/cls_loss",
@@ -341,6 +348,7 @@ print("Loss movement from epoch 1 to epoch 5:")
 for column in loss_columns:
     print(f"- {column}: {first_epoch[column]:.4f} -> {last_epoch[column]:.4f}")
 
+# %%
 metric_columns = [
     "metrics/precision(B)",
     "metrics/recall(B)",
@@ -348,7 +356,6 @@ metric_columns = [
     "metrics/mAP50-95(B)",
 ]
 
-print()
 print("Validation detection metrics:")
 for column in metric_columns:
     values = {row[column] for row in numeric_rows}
@@ -360,8 +367,8 @@ all_detection_metrics_zero = all(
     for row in numeric_rows
     for column in metric_columns
 )
-print()
-print("All validation detection metrics are zero:", all_detection_metrics_zero)
+if all_detection_metrics_zero:
+    print("Warning: All validation detection metrics are zero.")
 
 # %% [markdown]
 # ### Demonstrate the decisive artifacts
@@ -386,7 +393,7 @@ important_artifacts = [
 for title, filename, width in important_artifacts:
     artifact_path = output_dir / filename
     print(f"{title}: {artifact_path}")
-    display(IPyImage(filename=str(artifact_path), width=width))
+    display(artifact_path, width=width)
 
 # %% [markdown]
 # ### Working interpretation
@@ -413,10 +420,12 @@ for title, filename, width in important_artifacts:
 def print_box_metrics(title, metrics):
     """Print the high-level box metrics from an Ultralytics validation result."""
     print(title)
-    print(f"- precision: {metrics.box.mp:.4f}")
-    print(f"- recall: {metrics.box.mr:.4f}")
-    print(f"- mAP50: {metrics.box.map50:.4f}")
-    print(f"- mAP50-95: {metrics.box.map:.4f}")
+    aligned_print({
+        "- precision": f"{metrics.box.mp:.4f}",
+        "- recall": f"{metrics.box.mr:.4f}",
+        "- mAP50": f"{metrics.box.map50:.4f}",
+        "- mAP50-95": f"{metrics.box.map:.4f}",
+    })
 
 
 threshold_checks = [

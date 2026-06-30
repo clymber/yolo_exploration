@@ -30,12 +30,12 @@ Verify the YOLO development environment setup.
 # %aimport -torchaudio
 # %aimport -ultralytics
 
-
-# %%
-from yolo_exploration import configure_stdio_relative_path, PROJECT_ROOT
+from yolo_exploration import PROJECT_ROOT, configure_stdio_relative_path
 
 # Display project paths relatively for consistent output across environments.
+# Should be called before other imports.
 configure_stdio_relative_path(PROJECT_ROOT)
+
 
 # %%
 import os
@@ -48,9 +48,11 @@ import torchvision
 import ultralytics
 
 from yolo_exploration import (
+    aligned_print,
     cache_download,
     ensure_dir,
 )
+from yolo_exploration.utils import image as image_utils
 
 # %% [markdown]
 # # YOLO development environment setup verification
@@ -63,33 +65,41 @@ PREDICTIONS_DIR = ensure_dir(PROJECT_ROOT / "outputs" / "predictions")
 MODEL_PATH = WEIGHTS_DIR / "yolo11n.pt"
 BUS_IMAGE = DATA_EXTERNAL / "bus.jpg"
 
-print("Python:", sys.version)
-print("Platform:", platform.platform())
-print("Machine:", platform.machine())
-print("PyTorch:", torch.__version__)
-print("torchvision:", torchvision.__version__)
-print("torchaudio:", torchaudio.__version__)
-print("Ultralytics:", ultralytics.__version__)
-print("Project root:", PROJECT_ROOT)
-print("Weights directory:", WEIGHTS_DIR)
-print("External data directory:", DATA_EXTERNAL)
-print("Predictions directory:", PREDICTIONS_DIR)
+aligned_print({
+    "Python": sys.version,
+    "Platform": platform.platform(),
+    "Machine": platform.machine(),
+    "PyTorch": torch.__version__,
+    "torchvision": torchvision.__version__,
+    "torchaudio": torchaudio.__version__,
+    "Ultralytics": ultralytics.__version__,
+})
+aligned_print({
+    "Project root": PROJECT_ROOT,
+    "Weights directory": WEIGHTS_DIR,
+    "External data directory": DATA_EXTERNAL,
+    "Predictions directory": PREDICTIONS_DIR,
+})
 
 
 # %% [markdown]
 # ## 1. Verify PyTorch MPS (Metal Performance Shaders)
 
 # %%
-print("MPS built:", torch.backends.mps.is_built())
-print("MPS available:", torch.backends.mps.is_available())
-print("PYTORCH_ENABLE_MPS_FALLBACK =", os.environ.get("PYTORCH_ENABLE_MPS_FALLBACK"))
+aligned_print({
+    "Model path": MODEL_PATH,
+    "Bus image path": BUS_IMAGE,
+    "PYTORCH_ENABLE_MPS_FALLBACK": os.environ.get("PYTORCH_ENABLE_MPS_FALLBACK"),
+})
 
 if torch.backends.mps.is_available():
     DEVICE = "mps"
-    print("Selected device:", DEVICE)
-
     x = torch.ones(1, device=DEVICE)
-    print("Example tensor:", x)
+
+    aligned_print({
+        "Selected device": DEVICE,
+        "Example tensor": x,
+    })
 else:
     DEVICE = "cpu"
     print("WARNING: MPS is not available. Falling back to CPU.", file=sys.stderr)
@@ -119,8 +129,13 @@ else:
 # %%
 BUS_IMAGE = cache_download(BUS_IMAGE, "https://ultralytics.com/images/bus.jpg")
 
-print("Bus image:", BUS_IMAGE)
-print("Bus image exists:", BUS_IMAGE.exists())
+aligned_print({
+    "Bus image": BUS_IMAGE,
+    "Bus image exists": BUS_IMAGE.exists(),
+})
+
+if BUS_IMAGE.exists():
+    image_utils.display(BUS_IMAGE, width=300)
 
 # %%
 from ultralytics import YOLO
@@ -137,8 +152,7 @@ results = model.predict(
     show=False
 )
 
-print("Prediction completed.")
-print("Number of result objects:", len(results))
+print("Prediction completed. Number of result objects:", len(results))
 
 # %% [markdown]
 # The warning shown above indicates that operator `torchvision::nms` was doing Non-Maximum Suppression with CPU instead of GPU. This is because current `torchvision::nms` does not support MPS yet, and the conda virtual environment set up enables MPS fallback:
@@ -154,13 +168,28 @@ print("Number of result objects:", len(results))
 
 # %%
 result = results[0]
-
-print("Input image:", result.path)
-print("Original image shape:", result.orig_shape)
+messages = {
+    "Input image": result.path,
+    "Original image shape": result.orig_shape,
+}
 
 if result.boxes is not None:
-    print("Number of detected boxes:", len(result.boxes))
-    print("Class IDs:", result.boxes.cls.tolist())
-    print("Confidences:", result.boxes.conf.tolist())
+    messages.update({
+        "Number of detected boxes": len(result.boxes),
+        "Class IDs": result.boxes.cls.tolist(),
+        "Confidences": result.boxes.conf.tolist(),
+    })
 else:
-    print("No boxes detected.")
+    messages.update({"Number of detected boxes": 0})
+
+aligned_print(messages)
+
+# %%
+for result in results:
+    annotated_img = result.plot(
+        pil=True,
+        labels=True,
+        conf=True,
+        boxes=True,
+    )
+    image_utils.display(annotated_img, width=300)

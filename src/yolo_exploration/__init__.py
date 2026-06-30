@@ -9,7 +9,7 @@ from .utils.filepath import (
     ensure_dir,
     relative_to_userhome,
 )
-from .utils.text_stream import set_text_stream_filter
+from .utils.text_stream import aligned_print, set_text_stream_filter
 from .utils.ultralytics import configure_ultralytics_privacy
 from .utils.urlhelper import cache_download
 
@@ -22,6 +22,7 @@ __all__ = [
     "get_device",
     "directory_tree",
     "find_project_root",
+    "aligned_print",
     "PROJECT_ROOT",
     "relative_to_userhome",
 ]

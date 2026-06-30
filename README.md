@@ -24,10 +24,10 @@ Create the Conda environment:
 conda env create -f environment.yml
 ```
 
-Activate it:
+Activate it and load the project runtime environment variables:
 
 ```bash
-conda activate yolo-dev
+source env_setup.sh
 ```
 
 Install this project as an editable local package:

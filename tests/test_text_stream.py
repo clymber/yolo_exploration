@@ -1,6 +1,7 @@
 from io import StringIO
 
 from yolo_exploration.utils.text_stream import (
+    aligned_print,
     set_text_stream_filter,
     unset_text_stream_filter,
 )
@@ -21,6 +22,37 @@ def test_filtered_text_stream_substitutes_multiple_strings() -> None:
 
     assert written == len(text)
     assert target.getvalue() == "public: workspace/data/image.jpg"
+
+
+def test_print_key_values_aligns_colons() -> None:
+    """
+    Align keys to the widest key before printing their values.
+    """
+    target = StringIO()
+
+    aligned_print(
+        {
+            "Python": "3.11",
+            "External data directory": "data/external",
+        },
+        stream=target,
+    )
+
+    assert target.getvalue() == (
+        "Python                 : 3.11\n"
+        "External data directory: data/external\n"
+    )
+
+
+def test_print_key_values_handles_empty_mapping() -> None:
+    """
+    Write nothing when no key/value pairs are provided.
+    """
+    target = StringIO()
+
+    aligned_print({}, stream=target)
+
+    assert target.getvalue() == ""
 
 
 def test_filtered_text_stream_filters_each_write_independently() -> None:
